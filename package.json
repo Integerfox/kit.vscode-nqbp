@@ -1,0 +1,65 @@
+{
+  "name": "nqbp-integration",
+  "displayName": "NQBP Integration",
+  "description": "Adds context menu to Explorer for files and directories",
+  "version": "0.0.1",
+  "publisher": "integerfox-vscode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Integerfox/kit.vscode-nqbp"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nqbp-integration.selectNqbpBuild",
+        "title": "Select NQBP Build..."
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "nqbp-integration.selectNqbpBuild",
+          "group": "navigation"
+        }
+      ]
+    },
+    "terminal": {
+      "profiles": [
+        {
+          "title": "NQBP Terminal",
+          "id": "nqbp-integration.env-terminal"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^3.7.1",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  }
+}
