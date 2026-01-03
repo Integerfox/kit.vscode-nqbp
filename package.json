@@ -2,8 +2,9 @@
   "name": "nqbp-integration",
   "displayName": "NQBP Integration",
   "description": "Adds context menu to Explorer for files and directories",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "integerfox-vscode",
+  "icon": "integerfox_vscode_nqbp.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/Integerfox/kit.vscode-nqbp"
@@ -40,6 +41,16 @@
           "id": "nqbp-integration.env-terminal"
         }
       ]
+    },
+    "configuration": {
+      "title": "NQBP Integration",
+      "properties": {
+        "nqbp-integration.showNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show information notifications when running NQBP commands"
+        }
+      }
     }
   },
   "scripts": {

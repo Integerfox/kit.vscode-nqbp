@@ -7,6 +7,41 @@ import { execSync } from 'child_process';
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Explorer Context Menu extension is now active');
 
+	// Create default .nqbp-configuration.json if it doesn't exist
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+	if (workspaceFolder) {
+		const configPath = path.join(workspaceFolder.uri.fsPath, '.nqbp-configuration.json');
+		if (!fs.existsSync(configPath)) {
+			const defaultConfig = {
+				"active-projects": [],
+				"exclude-list": [
+					"xpkgs"
+				],
+				"build-naming": [
+					{
+						"windows": {
+							"msvc": 1,
+							"clang-host": 3,
+							"gcc-arm-mcu": 5
+						}
+					},
+					{
+						"linux": {
+							"gcc-host": 1,
+							"gcc-arm-mcu": 2
+						}
+					}
+				]
+			};
+			try {
+				fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+				console.log('.nqbp-configuration.json created');
+			} catch (error) {
+				console.error('Failed to create .nqbp-configuration.json:', error);
+			}
+		}
+	}
+
 	// Disable CMake automatic configuration prompt
 	const config = vscode.workspace.getConfiguration('cmake');
 	if (config.get('configureOnOpen') !== false) {
@@ -82,18 +117,18 @@ export function activate(context: vscode.ExtensionContext) {
 					return;
 				}
 
-				// Run sancho.py buildirs <dir> with environment from env.sh/env.bat
+				// Run sancho.py build-dirs <dir> with environment from env.sh/env.bat
 				let buildDirsOutput: string;
 				try {
 					if (isWindows) {
-						buildDirsOutput = execSync(`"${scriptPath}" >nul && ${pythonCmd} "${sanchoPath}" buildirs "${dirPath}"`, {
+						buildDirsOutput = execSync(`"${scriptPath}" >nul && ${pythonCmd} "${sanchoPath}" build-dirs "${dirPath}"`, {
 							encoding: 'utf-8',
 							cwd: workspaceFolder.uri.fsPath,
 							shell: 'cmd.exe',
 							stdio: ['pipe', 'pipe', 'pipe']
 						}).trim();
 					} else {
-						buildDirsOutput = execSync(`source "${scriptPath}" >/dev/null 2>&1 && ${pythonCmd} "${sanchoPath}" buildirs "${dirPath}"`, {
+						buildDirsOutput = execSync(`source "${scriptPath}" >/dev/null 2>&1 && ${pythonCmd} "${sanchoPath}" build-dirs "${dirPath}"`, {
 							encoding: 'utf-8',
 							cwd: workspaceFolder.uri.fsPath,
 							shell: '/bin/bash',
@@ -102,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 				} catch (error: any) {
 					const errorMsg = error.stderr || error.stdout || error.message;
-					vscode.window.showErrorMessage(`sancho buildirs failed: ${errorMsg}`);
+					vscode.window.showErrorMessage(`sancho build-dirs failed: ${errorMsg}`);
 					return;
 				}
 
@@ -110,7 +145,10 @@ export function activate(context: vscode.ExtensionContext) {
 				const lines = buildDirsOutput.split('\n').filter(line => line.trim() !== '');
 
 				if (lines.length === 0) {
-					vscode.window.showInformationMessage('No build directories found');
+					const showNotifications = vscode.workspace.getConfiguration('nqbp-integration').get('showNotifications', false);
+					if (showNotifications) {
+						vscode.window.showInformationMessage('No build directories found');
+					}
 					return;
 				}
 
@@ -180,7 +218,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 				// Execute nqbp.py --vs and --vsgdb synchronously and wait for completion
 				try {
-					vscode.window.showInformationMessage('Running nqbp.py --vs and --vsgdb...');
+					const showNotifications = vscode.workspace.getConfiguration('nqbp-integration').get('showNotifications', false);
+					if (showNotifications) {
+						vscode.window.showInformationMessage('Running nqbp.py --vs and --vsgdb...');
+					}
 					
 					if (isWindows) {
 						execSync(`"${scriptPath}" ${compilerOutput} >nul && cd /d "${trimmedLine}" && nqbp.py --vs && nqbp.py --vsgdb`, {
@@ -198,7 +239,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 					// Reload clangd server after nqbp.py completes
 					await vscode.commands.executeCommand('clangd.restart');
-					vscode.window.showInformationMessage('nqbp.py completed and clangd server reloaded');
+					if (showNotifications) {
+						vscode.window.showInformationMessage('nqbp.py completed and clangd server reloaded');
+					}
 				} catch (error: any) {
 					vscode.window.showErrorMessage(`nqbp.py failed: ${error.message}`);
 				}
