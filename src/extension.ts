@@ -60,15 +60,43 @@ export function activate(context: vscode.ExtensionContext) {
 				const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
 				const scriptPath = workspaceFolder ? path.join(workspaceFolder.uri.fsPath, scriptName) : scriptName;
 
-				return new vscode.TerminalProfile({
+				// Use terminal options to run env script without overriding shell configuration
+				const options: vscode.TerminalOptions = {
 					name: 'NQBP Terminal',
 					shellPath: isWindows ? 'cmd.exe' : '/bin/bash',
-					shellArgs: isWindows ? ['/k', scriptPath] : ['--rcfile', scriptPath, '-i']
-				});
+					shellArgs: isWindows ? undefined : ['-i'], // Keep interactive mode for bash, no custom rcfile
+					env: workspaceFolder ? { NQBP_WORKSPACE: workspaceFolder.uri.fsPath } : undefined
+				};
+
+				return new vscode.TerminalProfile(options);
 			}
 		}
 	);
 	context.subscriptions.push(terminalProfileProvider);
+
+	// Automatically run env script when NQBP Terminal is created
+	const terminalOpenListener = vscode.window.onDidOpenTerminal(async (terminal) => {
+		if (terminal.name === 'NQBP Terminal' || terminal.creationOptions.name === 'NQBP Terminal') {
+			const isWindows = process.platform === 'win32';
+			const scriptName = isWindows ? 'env.bat' : 'env.sh';
+			const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			
+			if (workspaceFolder) {
+				const scriptPath = path.join(workspaceFolder.uri.fsPath, scriptName);
+				if (fs.existsSync(scriptPath)) {
+					// Wait a bit for terminal to fully initialize
+					await new Promise(resolve => setTimeout(resolve, 500));
+					
+					if (isWindows) {
+						terminal.sendText(`call "${scriptPath}"`);
+					} else {
+						terminal.sendText(`source "${scriptName}"`);
+					}
+				}
+			}
+		}
+	});
+	context.subscriptions.push(terminalOpenListener);
 
 	// Set NQBP Terminal as the default terminal profile
 	// Use a timeout to ensure the profile provider is fully registered
