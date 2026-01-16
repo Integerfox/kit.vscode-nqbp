@@ -63,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
 				return new vscode.TerminalProfile({
 					name: 'NQBP Terminal',
 					shellPath: isWindows ? 'cmd.exe' : '/bin/bash',
-					shellArgs: isWindows ? ['/k', scriptPath] : ['-c', `source "${scriptPath}" && exec bash`]
+					shellArgs: isWindows ? ['/k', scriptPath] : ['--rcfile', scriptPath, '-i']
 				});
 			}
 		}
